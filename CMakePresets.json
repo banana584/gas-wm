@@ -1,0 +1,96 @@
+{
+    "version": 10,
+
+    "cmakeMinimumRequired": {
+        "major": 3,
+        "minor": 19,
+        "patch": 0
+    },
+
+    "configurePresets": [
+        {
+            "name": "base",
+            "hidden": true,
+            "generator": "Ninja",
+            "binaryDir": "${sourceDir}/build/${presetName}",
+
+            "cacheVariables": {
+                "CMAKE_EXPORT_COMPILE_COMMANDS": true
+            }
+        },
+
+        {
+            "name": "gcc",
+            "hidden": true,
+            "inherits": "base",
+
+            "cacheVariables": {
+                "CMAKE_C_COMPILER": "gcc"
+            }
+        },
+        {
+            "name": "clang",
+            "hidden": true,
+            "inherits": "base",
+
+            "cacheVariables": {
+                "CMAKE_C_COMPILER": "clang"
+            }
+        },
+
+        {
+            "name": "debug",
+            "hidden": true,
+            "inherits": "base",
+
+            "cacheVariables": {
+                "CMAKE_BUILD_TYPE": "Debug"
+            }
+        },
+        {
+            "name": "release",
+            "hidden": true,
+            "inherits": "base",
+
+            "cacheVariables": {
+                "CMAKE_BUILD_TYPE": "Release"
+            }
+        },
+
+        {
+            "name": "gcc-debug",
+            "inherits": ["gcc", "debug"]
+        },
+        {
+            "name": "gcc-release",
+            "inherits": ["gcc", "release"]
+        },
+        {
+            "name": "clang-debug",
+            "inherits": ["clang", "debug"]
+        },
+        {
+            "name": "clang-release",
+            "inherits": ["clang", "release"]
+        }
+    ],
+
+    "buildPresets": [
+        {
+            "name": "gcc-debug",
+            "configurePreset": "gcc-debug"
+        },
+        {
+            "name": "gcc-release",
+            "configurePreset": "gcc-release"
+        },
+        {
+            "name": "clang-debug",
+            "configurePreset": "clang-debug"
+        },
+        {
+            "name": "clang-release",
+            "configurePreset": "clang-release"
+        }
+    ]
+}
