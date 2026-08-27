@@ -1,0 +1,6 @@
+/home/alexw/projects/gas-wm/build/gcc-debug/CMakeFiles/data_structures.dir
+/home/alexw/projects/gas-wm/build/gcc-debug/CMakeFiles/input.dir
+/home/alexw/projects/gas-wm/build/gcc-debug/CMakeFiles/config.dir
+/home/alexw/projects/gas-wm/build/gcc-debug/CMakeFiles/compositor.dir
+/home/alexw/projects/gas-wm/build/gcc-debug/CMakeFiles/edit_cache.dir
+/home/alexw/projects/gas-wm/build/gcc-debug/CMakeFiles/rebuild_cache.dir
