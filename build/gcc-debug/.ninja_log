@@ -1,3 +1,5 @@
 # ninja log v7
 4	91	1787855540913291108	CMakeFiles/data_structures.dir/src/data_structures/ring.c.o	3851792ce625c4f
 2	123	1787855540910048426	CMakeFiles/config.dir/src/config/lua.c.o	716ba7bcd180e77c
+5	91	1787856053130365882	CMakeFiles/data_structures.dir/src/data_structures/ring.c.o	67b2a83db564db0f
+4	123	1787856053128275508	CMakeFiles/config.dir/src/config/lua.c.o	70d5eb19978b2b03
