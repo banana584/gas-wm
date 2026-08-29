@@ -17,6 +17,7 @@ add_library(data_structures SHARED
 config_target(data_structures)
 
 add_library(input SHARED
+    src/input/devices.c
     src/input/keys.c
 )
 config_target(input)
@@ -27,10 +28,10 @@ add_library(config SHARED
 )
 config_target(config)
 target_include_directories(config PUBLIC ${LUA_INCLUDE_DIRS})
-target_link_libraries(config PUBLIC ${LUA_LIBRARIES} input)
+target_link_libraries(config PUBLIC ${LUA_LIBRARIES})
 
 add_executable(compositor
     src/main.c
 )
 config_target(compositor)
-target_link_libraries(compositor PRIVATE config input)
+target_link_libraries(compositor PRIVATE config)

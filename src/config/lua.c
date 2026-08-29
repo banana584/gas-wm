@@ -6,7 +6,7 @@
 static const char* config_path() {
     static char path[1024];
 
-    snprintf(path, sizeof(path), "%s/.config/composit/config.lua", getenv("HOME"));
+    snprintf(path, sizeof(path), "%s/.config/gas/config.lua", getenv("HOME"));
 
     return path;
 }

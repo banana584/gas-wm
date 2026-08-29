@@ -6,6 +6,18 @@
 static keybind keybinds[MAX_KEYBINDS] = {0};
 static size_t num_keybinds = 0;
 
+const keyname keys[] = {
+    #define X(_name) { .name = #_name, .key = GAS_KEY_##_name, .type = false },
+    _GAS_KEY_LIST(X)
+    #undef X
+};
+
+const keyname mods[] = {
+    #define X(_name, _shift) { .name = #_name, .mod = GAS_MOD_##_name, .type = true },
+    _GAS_MOD_LIST(X)
+    #undef X
+};
+
 key gas_keys_parse_key(const char* str) {
     for (size_t i = 0; i < (sizeof(keys) / sizeof(keys[0])); i++) {
         if (strcmp(str, keys[i].name) == 0) {
