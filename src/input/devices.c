@@ -34,7 +34,7 @@ size_t gas_devices_create_handler(gas_event_handler* events) {
 
     handler->udev = udev_new();
 
-    gas_devices_enumerate(handler);
+    gas_devices_enumerate(handler, "input");
 
     setup_monitor(handler);
 
@@ -57,10 +57,10 @@ void gas_devices_destroy_handler(gas_device_handler* handler) {
     free(handler);
 }
 
-void gas_devices_enumerate(gas_device_handler* handler) {
+void gas_devices_enumerate(gas_device_handler* handler, const char* subsystem) {
     struct udev_enumerate* enumerate = udev_enumerate_new(handler->udev);
 
-    udev_enumerate_add_match_subsystem(enumerate, "input");
+    udev_enumerate_add_match_subsystem(enumerate, subsystem);
 
     udev_enumerate_scan_devices(enumerate);
 

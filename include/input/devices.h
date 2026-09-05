@@ -55,7 +55,8 @@ void gas_devices_destroy_handler(gas_device_handler* handler);
  * @warning Most likely shouldn't be called by the user, as devices are automatically enumerated.
  *
  * @param[in] handler The device handler to enumerate with.
+ * @param[in] subsystem The udev subsystem to scan.
  */
-void gas_devices_enumerate(gas_device_handler* handler);
+void gas_devices_enumerate(gas_device_handler* handler, const char* subsystem);
 
 #endif
