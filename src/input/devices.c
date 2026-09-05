@@ -65,7 +65,7 @@ void gas_devices_enumerate(gas_device_handler* handler) {
     udev_enumerate_scan_devices(enumerate);
 
     struct udev_list_entry* entry;
-    udev_list_entry_foreach(entry, (struct udev_list_entry*)enumerate) {
+    udev_list_entry_foreach(entry, udev_enumerate_get_list_entry(enumerate)) {
         const char* syspath = udev_list_entry_get_name(entry);
 
         struct udev_device* device = udev_device_new_from_syspath(handler->udev, syspath);

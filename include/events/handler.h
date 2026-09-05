@@ -6,6 +6,7 @@
 #include <stdint.h>
 #include <stdbool.h>
 #include <unistd.h>
+#include <stdatomic.h>
 #include <sys/epoll.h>
 
 #ifndef _GAS_HANDLER_MAX_EVENTS
@@ -51,6 +52,8 @@ typedef struct gas_event_handler {
     gas_event_client* clients[_GAS_HANDLER_MAX_CLIENTS];
     /** Bitmap of which slots are used. Used to quickly find empty array slots. */
     uint64_t bitmap;
+
+    atomic_bool stop;
 
     /** Array of each event raised. Reset each time events are raised. */
     struct epoll_event events[_GAS_HANDLER_MAX_EVENTS];

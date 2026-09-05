@@ -2,6 +2,7 @@
 
 gas_event_handler* gas_events_create_handler() {
     gas_event_handler* handler = (gas_event_handler*)malloc(sizeof(gas_event_handler));
+    atomic_store(&handler->stop, false);
     handler->bitmap = UINT64_MAX;
 
     handler->epfd = epoll_create1(0);
@@ -11,7 +12,7 @@ gas_event_handler* gas_events_create_handler() {
 
 void gas_events_destroy_handler(gas_event_handler* handler) {
     for (size_t i = 0; i < 64; i++) {
-        if ((handler->bitmap >> i & 1) == 0) continue;
+        if ((handler->bitmap >> i & 1) == 1) continue;
 
         gas_events_del_client(handler, i);
     }
@@ -53,7 +54,14 @@ void gas_events_del_client(gas_event_handler* handler, const size_t idx) {
 
 void gas_events_run_handler(gas_event_handler* handler) {
     while (true) {
+        if (atomic_load(&handler->stop)) {
+            break;
+        }
+
         size_t nfds = epoll_wait(handler->epfd, handler->events, _GAS_HANDLER_MAX_EVENTS, -1);
+        if (nfds == (size_t)-1) {
+            continue;
+        }
 
         for (size_t i = 0; i < nfds; i++) {
             struct epoll_event ev = handler->events[i];
