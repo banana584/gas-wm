@@ -37,6 +37,8 @@ typedef struct gas_event_client {
     /** The function that will be called when the client is removed. */
     gas_event_destroy destroy;
 
+    size_t idx;
+
     /** User data field. */
     void* data;
 } gas_event_client;
@@ -95,7 +97,9 @@ size_t gas_events_add_client(gas_event_handler* handler, gas_event_client* clien
  * @param[in] handler The event handler to remove a client from. Must not be NULL.
  * @param[in] idx The index of the client to remove. Same as the index returned by gas_events_add_client.
  */
-void gas_events_del_client(gas_event_handler* handler, const size_t idx);
+void gas_events_del_client_idx(gas_event_handler* handler, const size_t idx);
+
+void gas_events_del_client_ptr(gas_event_handler* handler, const gas_event_client* client);
 
 /**
  * @brief Runs an event handler.

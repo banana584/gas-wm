@@ -11,17 +11,19 @@
 typedef struct name { \
     type* arr; \
     size_t count; \
-    type* read; \
-    type* write; \
+    size_t cap; \
+    size_t read; \
+    size_t write; \
 } name; \
 name name##_create(const size_t cap); \
 void name##_destroy(name* ring); \
-bool name##_push(name* ring, const type value); \
+bool name##_push(name* ring, type* value); \
+type name##_peek(name* ring); \
 type name##_pop(name* ring); \
 
 #define IMPL_RING(name, type, overwrite) \
 name name##_create(const size_t cap) { \
-    name ring = { .count = cap }; \
+    name ring = { .cap = cap }; \
 \
     ring.arr = (type*)malloc(sizeof(type) * cap); \
     if (!ring.arr) { \
@@ -36,17 +38,22 @@ void name##_destroy(name* ring) { \
     free(ring->arr); \
     ring->arr = NULL; \
 } \
-bool name##_push(name* ring, const type value) { \
-    if (!overwrite && *ring->write != (type)0) return false; \
+bool name##_push(name* ring, type* value) { \
+    if (!overwrite && ring->write != 0) return false; \
 \
-    *ring->write = value; \
-    ring->write = (ring->write + 1) % ring->count; \
+    ring->arr[ring->write] = *value; \
+    ring->write = (ring->write + 1) % ring->cap; \
+    ring->count++; \
 \
     return true; \
 } \
+type name##_peek(name* ring) { \
+    return ring->arr[ring->read]; \
+} \
 type name##_pop(name* ring) { \
-    type val = *ring->read; \
-    ring->read = (ring->read + 1) % ring->count; \
+    type val = ring->arr[ring->read]; \
+    ring->read = (ring->read + 1) % ring->cap; \
+    ring->count--; \
 \
     return val; \
 } \

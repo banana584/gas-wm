@@ -1,6 +1,13 @@
 cmake_minimum_required(VERSION 3.19)
 project(gas-compositor VERSION 1.0.0 LANGUAGES C)
 
+option(ENABLE_ASAN "Enable AddressSanitizer" OFF)
+
+if(ENABLE_ASAN)
+    add_compile_options(-fsanitize=address -fno-omit-frame-pointer)
+    add_link_options(-fsanitize=address)
+endif()
+
 find_package(PkgConfig REQUIRED)
 pkg_check_modules(LUA REQUIRED lua5.4)
 pkg_check_modules(GLES REQUIRED IMPORTED_TARGET glesv2)
@@ -13,13 +20,18 @@ function(config_target target)
 endfunction()
 
 add_library(data_structures SHARED
+    src/data_structures/vector.c
+    src/data_structures/slot_map.c
     src/data_structures/ring.c
+    src/data_structures/queue.c
     src/data_structures/hashmap.c
 )
 config_target(data_structures)
 
 add_library(events SHARED
-    src/events/handler.c)
+    src/events/handler.c
+)
+config_target(events)
 
 add_library(devices SHARED
     src/input/devices.c

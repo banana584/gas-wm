@@ -7,8 +7,42 @@
 #include <unistd.h>
 #include <stdbool.h>
 #include <string.h>
+#include <sys/eventfd.h>
 #include <libudev.h> // Use udev over sd-device for compatabilty on non-systemd devices.
 #include "../events/handler.h"
+#include "../data_structures/ring.h"
+#include "../data_structures/vector.h"
+#include "../data_structures/queue.h"
+#include "../data_structures/slot_map.h"
+
+typedef struct gas_device_handler gas_device_handler;
+
+typedef struct gas_device_listener {
+    gas_device_handler* handler;
+    gas_event_client* client;
+} gas_device_listener;
+
+typedef struct gas_device_reference {
+    struct udev_device* device;
+    size_t recieved;
+    size_t count;
+} gas_device_reference;
+
+DECLARE_SLOT_MAP(ref_vector, gas_device_reference)
+
+typedef enum gas_device_event_type {
+    GAS_DEVICE_EVENT_ADD,
+    GAS_DEVICE_EVENT_RECV,
+    GAS_DEVICE_EVENT_DEL,
+} gas_device_event_type;
+
+typedef struct gas_device_event {
+    gas_device_event_type type;
+    size_t idx;
+} gas_device_event;
+
+DECLARE_SLOT_MAP(listener_vector, gas_device_listener)
+DECLARE_RING(event_queue, gas_device_event)
 
 /**
  * @struct gas_device_handler
@@ -21,7 +55,14 @@ typedef struct gas_device_handler {
     struct udev_monitor* monitor;
 
     /** Event handler id. */
-    size_t client;
+    gas_event_client* monitor_client;
+
+    gas_event_client* event_client;
+
+    ref_vector references;
+    listener_vector listeners;
+    event_queue incoming;
+    event_queue outgoing;
 } gas_device_handler;
 
 /**
@@ -34,9 +75,9 @@ typedef struct gas_device_handler {
  * @see gas_events_del_client
  *
  * @param[in] events The event handler to attach to.
- * @return The id of the device handler in the event handler.
+ * @return The created device handler.
  */
-size_t gas_devices_create_handler(gas_event_handler* events);
+gas_device_handler* gas_devices_create_handler(gas_event_handler* events);
 
 /**
  * @brief Destroys an event handler.
@@ -58,5 +99,7 @@ void gas_devices_destroy_handler(gas_device_handler* handler);
  * @param[in] subsystem The udev subsystem to scan.
  */
 void gas_devices_enumerate(gas_device_handler* handler, const char* subsystem);
+
+void gas_devices_add_listener(gas_device_handler* handler, gas_event_client* client);
 
 #endif

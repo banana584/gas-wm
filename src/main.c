@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <signal.h>
+#include <sys/eventfd.h>
 #include <wayland-server.h>
 #include <wayland-client.h>
 #include "../include/config/lua.h"
@@ -11,6 +12,29 @@ gas_event_handler* events;
 void sighandle(int sig) {
     (void)sig;
     atomic_store(&events->stop, true);
+}
+
+static void listener_read(gas_event_handler* handler, gas_event_client* client) {
+    (void)handler;
+    gas_device_listener* listener = client->data;
+
+    size_t count;
+    read(client->self, &count, sizeof(size_t));
+
+    gas_device_event incoming = event_queue_peek(&listener->handler->outgoing);
+
+    gas_device_event outgoing = { .type = GAS_DEVICE_EVENT_RECV, .idx = incoming.idx };
+    event_queue_push(&listener->handler->incoming, &outgoing);
+
+    gas_device_event outgoing2 = { .type = GAS_DEVICE_EVENT_DEL, .idx = incoming.idx };
+    event_queue_push(&listener->handler->incoming, &outgoing2);
+    
+    size_t val = 2;
+    write(listener->handler->event_client->self, &val, sizeof(size_t));
+}
+
+static void listener_destroy(void* data) {
+    free(data);
 }
 
 int main() {
@@ -33,11 +57,38 @@ int main() {
     signal(SIGINT, sighandle);
 
     events = gas_events_create_handler();
-    size_t devices = gas_devices_create_handler(events);
+    gas_device_handler* devices = gas_devices_create_handler(events);
+
+    gas_device_listener* listener = (gas_device_listener*)malloc(sizeof(gas_device_listener));
+    gas_event_client* listener_events = (gas_event_client*)malloc(sizeof(gas_event_client));
+
+    listener->handler = devices;
+    listener->client = listener_events;
+
+    listener_events->self = eventfd(0, EFD_SEMAPHORE);
+    listener_events->data = listener;
+    listener_events->read = listener_read;
+    listener_events->destroy = listener_destroy;
+
+    gas_devices_add_listener(devices, listener_events);
+    gas_events_add_client(events, listener_events);
+
+    gas_device_listener* listener2 = (gas_device_listener*)malloc(sizeof(gas_device_listener));
+    gas_event_client* listener_events2 = (gas_event_client*)malloc(sizeof(gas_event_client));
+
+    listener2->handler = devices;
+    listener2->client = listener_events2;
+
+    listener_events2->self = eventfd(0, EFD_SEMAPHORE);
+    listener_events2->data = listener2;
+    listener_events2->read = listener_read;
+    listener_events2->destroy = listener_destroy;
+
+    gas_devices_add_listener(devices, listener_events2);
+    gas_events_add_client(events, listener_events2);
 
     gas_events_run_handler(events);
 
-    gas_events_del_client(events, devices);
     gas_events_destroy_handler(events);
 
     return 0;
