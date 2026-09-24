@@ -153,5 +153,12 @@ void gas_devices_enumerate(gas_device_handler* handler, const char* subsystem) {
 }
 
 void gas_devices_add_listener(gas_device_handler* handler, gas_event_client* client) {
-    listener_vector_push(&handler->listeners, client->data);
+    gas_device_listener* listener = (gas_device_listener*)client->data;
+    listener->idx = listener_vector_push(&handler->listeners, listener);
+    listener_vector_set(&handler->listeners, listener->idx, listener); // make sure idx is stored in vector.
+}
+
+void gas_devices_del_listener(gas_device_handler* handler, gas_event_client* client) {
+    gas_device_listener* listener = (gas_device_listener*)client->data;
+    listener_vector_pop(&handler->listeners, listener->idx);
 }
