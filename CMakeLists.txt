@@ -19,6 +19,11 @@ function(config_target target)
     target_compile_options(${target} PRIVATE -Wall -Wextra -Wpedantic -Werror)
 endfunction()
 
+add_library(logger SHARED
+    src/logger/logger.c
+)
+config_target(logger)
+
 add_library(data_structures SHARED
     src/data_structures/vector.c
     src/data_structures/slot_map.c
@@ -61,4 +66,4 @@ add_executable(compositor
     src/main.c
 )
 config_target(compositor)
-target_link_libraries(compositor PRIVATE config devices events)
+target_link_libraries(compositor PRIVATE config devices events logger)

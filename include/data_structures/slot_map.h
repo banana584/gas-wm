@@ -106,8 +106,10 @@ size_t name##_push(name* slots, type* val) { \
 } \
 type name##_pop(name* slots, size_t idx) { \
     name##_free_push(&slots->free, &idx); \
+    type val = slots->arr[idx]; \
+    memset(slots->arr + idx, 0, sizeof(type)); \
 \
-    return slots->arr[idx]; \
+    return val; \
 } \
 
 #endif

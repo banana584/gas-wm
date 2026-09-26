@@ -6,6 +6,7 @@
 #include "../include/config/lua.h"
 #include "../include/config/keys.h"
 #include "../include/input/devices.h"
+#include "../include/logger/logger.h"
 
 gas_event_handler* events;
 
@@ -39,6 +40,12 @@ static void listener_destroy(void* data) {
 
 int main() {
     printf("Hello, World!\n");
+    
+    gas_logger_set_format("$DATETIME [$LEVEL] $MSG");
+    GAS_LOGGER_LOG_NOARGS(GAS_LOG_LEVEL_INFO, "x");
+    GAS_LOGGER_LOG(GAS_LOG_LEVEL_FATAL, "y %d", 1);
+    
+    return 0;
 
     lua_State* L = lua_init_state();
 
