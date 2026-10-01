@@ -30,6 +30,7 @@ add_library(data_structures SHARED
     src/data_structures/ring.c
     src/data_structures/queue.c
     src/data_structures/hashmap.c
+    src/data_structures/heap.c
 )
 config_target(data_structures)
 
@@ -66,4 +67,4 @@ add_executable(compositor
     src/main.c
 )
 config_target(compositor)
-target_link_libraries(compositor PRIVATE config devices events logger)
+target_link_libraries(compositor PRIVATE udev config devices events logger)

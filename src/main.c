@@ -22,14 +22,21 @@ static void listener_read(gas_event_handler* handler, gas_event_client* client) 
     size_t count;
     read(client->self, &count, sizeof(size_t));
 
-    gas_device_event incoming = event_queue_peek(&listener->handler->outgoing);
+    gas_device_event incoming = event_queue_pop(&listener->handler->outgoing);
+
+    struct udev_device* dev = ref_vector_get(&listener->handler->references, incoming.idx).device;
+    const char* name = udev_device_get_sysattr_value(dev, "name");
+    
+    if (name && false) {
+        printf("%s\n", name);
+    }
 
     gas_device_event outgoing = { .type = GAS_DEVICE_EVENT_RECV, .idx = incoming.idx };
     event_queue_push(&listener->handler->incoming, &outgoing);
 
-    gas_device_event outgoing2 = { .type = GAS_DEVICE_EVENT_DEL, .idx = incoming.idx };
-    event_queue_push(&listener->handler->incoming, &outgoing2);
-    
+    outgoing.type = GAS_DEVICE_EVENT_DEL;
+    event_queue_push(&listener->handler->incoming, &outgoing);
+
     size_t val = 2;
     write(listener->handler->event_client->self, &val, sizeof(size_t));
 }
@@ -39,13 +46,9 @@ static void listener_destroy(void* data) {
 }
 
 int main() {
-    printf("Hello, World!\n");
-    
     gas_logger_set_format("$DATETIME [$LEVEL] $MSG");
     GAS_LOGGER_LOG_NOARGS(GAS_LOG_LEVEL_INFO, "x");
     GAS_LOGGER_LOG(GAS_LOG_LEVEL_FATAL, "y %d", 1);
-    
-    return 0;
 
     lua_State* L = lua_init_state();
 
@@ -73,6 +76,7 @@ int main() {
     listener->client = listener_events;
 
     listener_events->self = eventfd(0, EFD_SEMAPHORE);
+    listener_events->priority = 2;
     listener_events->data = listener;
     listener_events->read = listener_read;
     listener_events->destroy = listener_destroy;
@@ -80,19 +84,8 @@ int main() {
     gas_devices_add_listener(devices, listener_events);
     gas_events_add_client(events, listener_events);
 
-    gas_device_listener* listener2 = (gas_device_listener*)malloc(sizeof(gas_device_listener));
-    gas_event_client* listener_events2 = (gas_event_client*)malloc(sizeof(gas_event_client));
-
-    listener2->handler = devices;
-    listener2->client = listener_events2;
-
-    listener_events2->self = eventfd(0, EFD_SEMAPHORE);
-    listener_events2->data = listener2;
-    listener_events2->read = listener_read;
-    listener_events2->destroy = listener_destroy;
-
-    gas_devices_add_listener(devices, listener_events2);
-    gas_events_add_client(events, listener_events2);
+    ////gas_devices_enumerate(devices, "input");
+    gas_devices_enumerate(devices, "drm");
 
     gas_events_run_handler(events);
 

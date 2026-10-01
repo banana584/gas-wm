@@ -1,11 +1,30 @@
 #include "../../include/events/handler.h"
 
+static bool client_less(void* left, void* right) {
+    gas_event_client* left_client = (gas_event_client*)left;
+    gas_event_client* right_client = (gas_event_client*)right;
+
+    return left_client->priority < right_client->priority;
+}
+
+static bool client_greater(void* left, void* right) {
+    gas_event_client* left_client = (gas_event_client*)left;
+    gas_event_client* right_client = (gas_event_client*)right;
+
+    return left_client->priority > right_client->priority;
+}
+
+
+IMPL_HEAP(priority_heap, gas_event_client, false, client_less, client_greater)
+
 gas_event_handler* gas_events_create_handler() {
     gas_event_handler* handler = (gas_event_handler*)malloc(sizeof(gas_event_handler));
     atomic_store(&handler->stop, false);
     handler->bitmap = UINT64_MAX;
 
     handler->epfd = epoll_create1(0);
+
+    handler->heap = priority_heap_create();
 
     return handler;
 }
@@ -18,6 +37,8 @@ void gas_events_destroy_handler(gas_event_handler* handler) {
     }
 
     close(handler->epfd);
+
+    priority_heap_destroy(&handler->heap);
 
     free(handler);
 }
@@ -73,7 +94,14 @@ void gas_events_run_handler(gas_event_handler* handler) {
             struct epoll_event ev = handler->events[i];
             gas_event_client* client = ev.data.ptr;
 
-            client->read(handler, client);
+            priority_heap_insert(&handler->heap, client);
+        }
+
+        for (size_t i = 0; i < nfds; i++) {
+            gas_event_client client = priority_heap_pop(&handler->heap);
+            ////printf("Running priority %zu\n", client.priority);
+
+            client.read(handler, &client);
         }
     }
 }

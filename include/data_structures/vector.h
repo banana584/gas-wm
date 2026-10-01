@@ -13,7 +13,7 @@
 #endif
 
 #ifndef _GAS_VECTOR_THRESHOLD
-#define _GAS_VECTOR_THRESHOLD 1.7
+#define _GAS_VECTOR_THRESHOLD 2
 #endif
 
 #define DECLARE_VECTOR(name, type) \

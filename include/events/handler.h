@@ -8,6 +8,7 @@
 #include <unistd.h>
 #include <stdatomic.h>
 #include <sys/epoll.h>
+#include "../data_structures/heap.h"
 
 #ifndef _GAS_HANDLER_MAX_EVENTS
 #define _GAS_HANDLER_MAX_EVENTS 1024
@@ -39,10 +40,14 @@ typedef struct gas_event_client {
 
     /** The index of the client in the handler's array. */
     size_t idx;
+    
+    size_t priority;
 
     /** User data field. */
     void* data;
 } gas_event_client;
+
+DECLARE_HEAP(priority_heap, gas_event_client)
 
 /**
  * @struct event_handler
@@ -57,6 +62,8 @@ typedef struct gas_event_handler {
     uint64_t bitmap;
 
     atomic_bool stop;
+    
+    priority_heap heap;
 
     /** Array of each event raised. Reset each time events are raised. */
     struct epoll_event events[_GAS_HANDLER_MAX_EVENTS];
