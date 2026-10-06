@@ -1,6 +1,4 @@
 #include "../../include/input/devices.h"
-#include <libudev.h>
-#include <sys/eventfd.h>
 
 IMPL_SLOT_MAP(listener_vector, gas_device_listener)
 IMPL_SLOT_MAP(ref_vector, gas_device_reference)
@@ -16,28 +14,37 @@ static void setup_monitor(gas_device_handler* handler) {
 }
 
 static void handle_event(gas_event_handler* events, gas_event_client* client) {
+    (void)events;
     size_t count;
     read(client->self, &count, sizeof(size_t));
-
-    (void)events;
     gas_device_handler* handler = client->data;
 
-    gas_device_event event = event_queue_peek(&handler->incoming);
-
-    gas_device_reference ref = ref_vector_get(&handler->references, event.idx);
-
-    if (event.type == GAS_DEVICE_EVENT_RECV) {
-        if (ref.recieved-- == 0 || ref.recieved == 0) {
-            printf("Popping %p\n", (void*)ref.device);
-            event_queue_pop(&handler->outgoing);
+    while (count > 0) {
+        ssize_t size = read(client->self, &count, sizeof(size_t));
+        if (size == -1) {
+            if (errno == EAGAIN) {
+                break;
+            } else {
+                perror("read");
+                break;
+            }
         }
-        ref_vector_set(&handler->references, event.idx, &ref);
-    } else if (event.type == GAS_DEVICE_EVENT_DEL) {
-        if (ref.count-- == 0 || ref.count == 0) {
-            printf("Deleting %p\n", (void*)ref.device);
-            udev_device_unref(ref.device);
-            ref.device = NULL;
-            ref_vector_pop(&handler->references, event.idx);
+
+        gas_device_event event = event_queue_pop(&handler->incoming);
+
+        gas_device_reference ref = ref_vector_get(&handler->references, event.idx);
+
+        if (event.type == GAS_DEVICE_EVENT_RECV) {
+            if (ref.recieved-- == 0 || ref.recieved == 0) {
+                event_queue_pop(&handler->outgoing);
+            }
+            ref_vector_set(&handler->references, event.idx, &ref);
+        } else if (event.type == GAS_DEVICE_EVENT_DEL) {
+            if (ref.count-- == 0 || ref.count == 0) {
+                udev_device_unref(ref.device);
+                ref.device = NULL;
+                ref_vector_pop(&handler->references, event.idx);
+            }
         }
     }
 }
@@ -48,8 +55,6 @@ static void handle_device(gas_device_handler* handler, struct udev_device* devic
     size_t idx = ref_vector_push(&handler->references, &ref);
 
     gas_device_event event = { .type = GAS_DEVICE_EVENT_ADD, .idx = idx };
-
-    event_queue_push(&handler->outgoing, &event);
 
     size_t val = 1;
 
@@ -65,6 +70,8 @@ static void handle_device(gas_device_handler* handler, struct udev_device* devic
     ref.recieved = ref.count;
 
     ref_vector_set(&handler->references, idx, &ref);
+    
+    event_queue_push(&handler->outgoing, &event);
 }
 
 static void read_monitor(gas_event_handler* events, gas_event_client* client) {
@@ -87,7 +94,7 @@ gas_device_handler* gas_devices_create_handler(gas_event_handler* events) {
 
     int monitor_fd = udev_monitor_get_fd(handler->monitor);
 
-    int event_fd = eventfd(0, EFD_SEMAPHORE);
+    int event_fd = eventfd(0, EFD_SEMAPHORE | EFD_NONBLOCK);
 
     handler->monitor_client = (gas_event_client*)malloc(sizeof(gas_event_client));
     handler->monitor_client->priority = 1;
@@ -99,7 +106,7 @@ gas_device_handler* gas_devices_create_handler(gas_event_handler* events) {
     gas_events_add_client(events, handler->monitor_client);
 
     handler->event_client = (gas_event_client*)malloc(sizeof(gas_event_client));
-    handler->event_client->priority = 3;
+    handler->event_client->priority = 2;
     handler->event_client->self = event_fd;
     handler->event_client->read = handle_event;
     handler->event_client->destroy = NULL;
@@ -111,15 +118,6 @@ gas_device_handler* gas_devices_create_handler(gas_event_handler* events) {
 }
 
 void gas_devices_destroy_handler(gas_device_handler* handler) {
-    for (size_t i = 0; i < handler->references.count; i++) {
-        gas_device_reference ref = ref_vector_get(&handler->references, i);
-        if (ref.device) {
-            printf("Undeleted\n");
-            udev_device_unref(ref.device);
-            ref_vector_pop(&handler->references, i);
-        }
-    }
-
     ref_vector_destroy(&handler->references);
     listener_vector_destroy(&handler->listeners);
     event_queue_destroy(&handler->incoming);
@@ -143,8 +141,6 @@ void gas_devices_enumerate(gas_device_handler* handler, const char* subsystem) {
         struct udev_device* device = udev_device_new_from_syspath(handler->udev, syspath);
 
         handle_device(handler, device);
-
-        ////udev_device_unref(device);
     }
 
     udev_enumerate_unref(enumerate);

@@ -14,7 +14,7 @@
 #endif
 
 #ifndef _GAS_SLOT_MAP_THRESHOLD
-#define _GAS_SLOT_MAP_THRESHOLD 2
+#define _GAS_SLOT_MAP_THRESHOLD 1.7
 #endif
 
 #define DECLARE_SLOT_MAP(name, type) \
@@ -41,6 +41,9 @@ IMPL_VECTOR(name##_free, size_t) \
 name name##_create() { \
     name slots = { .cap = _GAS_SLOT_MAP_START }; \
     slots.free = name##_free_create(); \
+    for (size_t i = 0; i < slots.cap; i++) { \
+        name##_free_push(&slots.free, &i); \
+    } \
  \
     slots.arr = (type*)malloc(sizeof(type) * slots.cap); \
     memset(slots.arr, 0, sizeof(type) * slots.cap); \
@@ -64,10 +67,17 @@ int name##_resize(name* slots, size_t cap) { \
     return 0; \
 } \
 int name##_grow(name* slots) { \
+    const size_t old = slots->cap; \
     size_t count = slots->count * _GAS_SLOT_MAP_THRESHOLD; \
     if (count < slots->cap) return 0; \
 \
-    return name##_resize(slots, count); \
+    int res = name##_resize(slots, count); \
+\
+    for (size_t i = old; i < slots->cap; i++) { \
+        name##_free_push(&slots->free, &i); \
+    } \
+\
+    return res; \
 } \
 int name##_shrink(name* slots) { \
     size_t count = slots->cap / _GAS_SLOT_MAP_THRESHOLD; \
@@ -87,15 +97,8 @@ size_t name##_push(name* slots, type* val) { \
     size_t idx; \
 \
     if (slots->free.count > 0) { \
-        do { \
-            idx = name##_free_pop(&slots->free, slots->free.count); \
-        } while (idx > slots->count && slots->free.count > 0); \
-\
-        if (slots->free.count == 0) { \
-            goto zero_left; \
-        } \
+        idx = name##_free_pop(&slots->free, 0); \
     } else { \
-        zero_left: \
         idx = slots->right++; \
     } \
 \

@@ -7,6 +7,7 @@
 #include <unistd.h>
 #include <stdbool.h>
 #include <string.h>
+#include <errno.h>
 #include <sys/eventfd.h>
 #include <libudev.h> // Use udev over sd-device for compatabilty on non-systemd devices.
 #include "../events/handler.h"

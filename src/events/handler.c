@@ -99,7 +99,6 @@ void gas_events_run_handler(gas_event_handler* handler) {
 
         for (size_t i = 0; i < nfds; i++) {
             gas_event_client client = priority_heap_pop(&handler->heap);
-            ////printf("Running priority %zu\n", client.priority);
 
             client.read(handler, &client);
         }
