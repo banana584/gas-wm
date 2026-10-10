@@ -10,6 +10,7 @@ endif()
 
 find_package(PkgConfig REQUIRED)
 pkg_check_modules(LUA REQUIRED lua5.4)
+pkg_check_modules(LIBSEAT REQUIRED libseat)
 pkg_check_modules(GLES REQUIRED IMPORTED_TARGET glesv2)
 
 function(config_target target)
@@ -59,6 +60,7 @@ add_library(gl SHARED
     src/rendering/gl/buffers.c
     src/rendering/gl/vertex_arrays.c
     src/rendering/gl/textures.c
+    src/rendering/gl/loading.c
 )
 config_target(config)
 target_link_libraries(gl PRIVATE data_structures PkgConfig::GLES)
